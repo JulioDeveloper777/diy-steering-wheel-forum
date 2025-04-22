@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BadgesDB {
+  Explorador
+  Famosinho
+}
+
+model User {
+  id        String      @id @default(uuid())
+  bio       String?     @default("Nada a dizer.")
+  Project   Project[]
+  ForumPost ForumPost[]
+  Comment   Comment[]
+  Badges    Badges[]
+
+  @@map("users")
+}
+
+model Badges {
+  id     String   @id @default(uuid())
+  badge  BadgesDB @default(Explorador)
+  // imgUrl    String
+  // createdAt DateTime @default(now())
+  User   User?    @relation(fields: [userId], references: [id])
+  userId String
+
+  @@map("badges")
+}
+
+model Project {
+  id              String    @id @default(uuid())
+  title           String
+  description     String
+  content         String    @db.Text
+  images          String[]
+  tags            String[]
+  likes           Int       @default(0)
+  comments        Int       @default(0)
+  views           Int       @default(0)
+  authorId        String
+  author          User      @relation(fields: [authorId], references: [id])
+  projectComments Comment[] @relation("ProjectComments")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("projects")
+}
+
+model ForumPost {
+  id               String         @id @default(uuid())
+  title            String
+  content          String         @db.Text
+  category         CategorysForum @relation(fields: [categorysForumId], references: [id])
+  replies          Int            @default(0)
+  views            Int            @default(0)
+  authorId         String
+  author           User           @relation(fields: [authorId], references: [id])
+  comments         Comment[]      @relation("PostComments")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  Comment          Comment[]
+  categorysForumId String
+
+  @@map("forum_posts")
+}
+
+model Comment {
+  id          String     @id @default(uuid())
+  content     String
+  authorId    String
+  author      User       @relation(fields: [authorId], references: [id])
+  projectId   String?
+  project     Project?   @relation("ProjectComments", fields: [projectId], references: [id])
+  postId      String?
+  post        ForumPost? @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
+  parentId    String?
+  createdAt   DateTime   @default(now())
+  ForumPost   ForumPost? @relation(fields: [forumPostId], references: [id])
+  forumPostId String?
+
+  @@map("comments")
+}
+
+// model Product {
+//   id          String   @id @default(uuid())
+//   name        String
+//   description String   @db.Text
+//   price       Float
+//   stock       Int      @default(0)
+//   category    String
+//   images      String[]
+//   sales       Int      @default(0)
+//   featured    Boolean  @default(false)
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+
+//   @@map("products")
+// }
+
+model CategorysForum {
+  id          String @id @unique @default(uuid())
+  icon        String
+  name        String @unique
+  description String
+
+  postsForum ForumPost[]
+
+  @@map("category_forum")
+}
